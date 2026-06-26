@@ -38,7 +38,7 @@ def findLoc(input1, cities, cityPop, allTF):
     #convert the abreviations into full names to add weights to
     newNames = dict(
     zip(
-        cities["state_id"].astype(str).str.lower(),
+        cities["state_id"].astype(str),
         cities["state_name"].astype(str).str.lower()
     )
 )
@@ -48,15 +48,14 @@ def findLoc(input1, cities, cityPop, allTF):
     
     for element in cityPrediction:
         if element in cityWeight:
-            if element in tfScores:
-                bias = findTfIDF(element, tfScores,allTF)
-                cityWeight[element] += bias
+            #if element in tfScores:
+            bias = findTfIDF(element, tfScores,allTF)
+            cityWeight[element] += bias + .2
             #add bias for term frequency
-            else:
-                bias = .2
-                cityWeight[element] += bias + .2
         else:
-            cityWeight[element] = .2
+            #if element in tfScores:
+            bias = findTfIDF(element, tfScores, allTF)
+            cityWeight[element] = bias + .2
             #check if the element is in the 2nd dataset
         match = cityPop[(cityPop["US City"].str.lower() == element.lower())]
         if not match.empty:
@@ -66,14 +65,14 @@ def findLoc(input1, cities, cityPop, allTF):
             
     for element in statePrediction:
         if element in stateWeight:
-            if element in tfScores:
-                bias = findTfIDF(element, tfScores,allTF)
-                stateWeight[element] += bias + .2
-            else:
-                stateWeight[element] += .2
+            #if element in tfScores:
+            bias = findTfIDF(element, tfScores,allTF)
+            stateWeight[element] += bias + .2
         else:
-            stateWeight[element] = .2
-    
+            #if element in tfScores:
+            bias = findTfIDF(element, tfScores, allTF)
+            stateWeight[element] = bias + .2
+
     if not cityPrediction:
         cityPrediction.append("No city found")
         cityWeight["No city found"] = 0
