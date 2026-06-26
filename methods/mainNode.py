@@ -55,15 +55,19 @@ if __name__ == "__main__":
     if text == "Error in extension type":
         print(text)
     
-    tfScores = findTfIDF(example)
+    tfScores = []
+    for resume in example:
+        lines = resume.split("\n")
+        temp = findTF(lines)
+        tfScores.append(temp)
     
-    city,state = findLoc(text, cities, cityPopulation, example, tfScores)
+    city,state = findLoc(text, cities, cityPopulation, tfScores)
     
     
     for i in range(20):
         lines = example[i].split("\n")
         
-        city, state = findLoc(lines, cities, cityPopulation, example, tfScores)
+        city, state = findLoc(lines, cities, cityPopulation, tfScores)
         print(f"Resume #{i}\nCity: {city}\nState: {state}")
 
         #print(f"Resume #{i}\n\n {lines}")
