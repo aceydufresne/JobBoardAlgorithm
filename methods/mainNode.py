@@ -2,6 +2,8 @@ import fitz
 import os
 import pandas as pd
 from locationEmbedding import findLoc
+from locationEmbedding import findTF
+from locationEmbedding import findTfIDF
 import spacy
 from pypdf import PdfReader
 from docx import Document
@@ -33,7 +35,7 @@ def uploadRes(resPath):
         return extVar, lines
     else:
         negResponse = "Error in extension type"
-        return extVar, 
+        return extVar, negResponse
 
 if __name__ == "__main__":
     model = spacy.load("en_core_web_sm")
@@ -50,13 +52,18 @@ if __name__ == "__main__":
     cityPopulation = pd.read_csv(cityPop)
     
     extVar, text = uploadRes(inputPath)
+    if text == "Error in extension type":
+        print(text)
     
-    findLoc(text,cities, cityPopulation)
+    tfScores = findTfIDF(resumes)
+    
+    state, city = findLoc(text, cities, cityPopulation, tfScores)
+    
     
     for i in range(20):
         lines = example[i].split("\n")
         
-        city, state = findLoc(lines, cities, cityPopulation)
+        city, state = findLoc(lines, cities, cityPopulation, tfScores)
         print(f"Resume #{i}\nCity: {city}\nState: {state}")
 
         #print(f"Resume #{i}\n\n {lines}")
