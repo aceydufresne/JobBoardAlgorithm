@@ -1,0 +1,155 @@
+Kennesaw
+No state found
+MS
+University
+No state found
+MS
+Startup
+No state found
+No state found
+No state found
+NC
+Lead
+No state found
+
+
+GA
+Kennesaw
+No state found
+No state found
+MS
+University
+No state found
+MS
+Startup
+No state found
+No state found
+No state found
+NC
+Lead
+No state found
+
+Resume #0
+City: College
+State: IN
+Resume #1
+City: University
+State: IN
+Resume #2
+City: Topeka
+State: IN
+Resume #3
+City: May
+State: IN
+Resume #4
+City: Startup
+State: IN
+Resume #5
+City: Justice
+State: IN
+Resume #6
+City: English
+State: IN
+Resume #7
+City: University
+State: IN
+Resume #8
+City: English
+State: IN
+Resume #9
+City: Blue
+State: IN
+
+
+Resume #0
+City: COMMERCE
+State: MISSOURI
+Resume #1
+City: MEDIA
+State: CONNECTICUT
+Resume #2
+City: TOPEKA
+State: KANSAS
+Resume #3
+City: CENTER
+State: TEXAS
+Resume #4
+City: UNIVERSITY
+State: MISSISSIPPI
+Resume #5
+City: None
+State: None
+Resume #6 = 
+City: HOUSTON
+State: TEXAS
+Resume #7 = 0
+City: None
+State: None
+Resume #8 = 1/2
+City: LEAD
+State: NORTH CAROLINA
+Resume #9 = Correct
+City: None
+State: None
+
+
+Resume #0
+City: commerce
+State: missouri
+Resume #1
+City: media
+State: connecticut
+Resume #2
+City: topeka
+State: kansas
+Resume #3
+City: tool
+State: texas
+Resume #4
+City: university
+State: mississippi
+Resume #5
+City: None
+State: None
+Resume #6
+City: houston
+State: texas
+Resume #7
+City: None
+State: None
+Resume #8
+City: lead
+State: north carolina
+Resume #9
+City: None
+State: None
+Resume #10
+City: mentor
+State: mississippi
+Resume #11
+City: university
+State: mississippi
+Resume #12
+City: None
+State: None
+Resume #13
+City: union
+State: michigan
+Resume #14
+City: None
+State: None
+Resume #15
+City: None
+State: None
+Resume #16
+City: severance
+State: kansas
+Resume #17
+City: None
+State: None
+Resume #18
+City: None
+State: None
+Resume #19
+City: None
+State: None
