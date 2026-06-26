@@ -4,13 +4,15 @@ import pandas as pd
 import string
 import math
 
-def findLoc(input1, cities, cityPop, tfScores):
-    stateNames = set(cities["state_name"].astype(str).str.upper())
-    stateIDs = set(cities["state_id"].astype(str).str.upper())
-    cityNames = set(cities["city"].astype(str).str.upper())
+def findLoc(input1, cities, cityPop, allTF):
+    tfScores = findTF(input1)
+    stateNames = set(cities["state_name"].astype(str).str.lower())
+    stateIDs = set(cities["state_id"].astype(str))
+    cityNames = set(cities["city"].astype(str).str.lower())
     statePop = set(cities["population"])
     #18713220 max population
     maxPop = max(cities["population"])
+    
     
     cityPrediction = []
     statePrediction = []
@@ -27,7 +29,7 @@ def findLoc(input1, cities, cityPop, tfScores):
             if term in stateIDs:
                 idPrediction.append(term)
                 #capatalize after id has been checked
-            term = term.upper()
+            term = term.lower()
             if term in stateNames:
                 statePrediction.append(term)
             if term in cityNames:
@@ -36,8 +38,8 @@ def findLoc(input1, cities, cityPop, tfScores):
     #convert the abreviations into full names to add weights to
     newNames = dict(
     zip(
-        cities["state_id"].astype(str).str.upper(),
-        cities["state_name"].astype(str).str.upper()
+        cities["state_id"].astype(str).str.lower(),
+        cities["state_name"].astype(str).str.lower()
     )
 )
     for name in idPrediction:
@@ -46,12 +48,17 @@ def findLoc(input1, cities, cityPop, tfScores):
     
     for element in cityPrediction:
         if element in cityWeight:
+            if element in tfScores:
+                bias = findTfIDF(element, tfScores,allTF)
+                cityWeight[element] += bias
             #add bias for term frequency
-            cityWeight[element] += .2
+            else:
+                bias = .2
+                cityWeight[element] += bias + .2
         else:
             cityWeight[element] = .2
             #check if the element is in the 2nd dataset
-        match = city[(cityPop["US City"].str.upper() == element.upper())]
+        match = cityPop[(cityPop["US City"].str.lower() == element.lower())]
         if not match.empty:
             pop = match.iloc[0]["Population 2024"]
             populationWeight = pop / maxPop * .2
@@ -59,7 +66,11 @@ def findLoc(input1, cities, cityPop, tfScores):
             
     for element in statePrediction:
         if element in stateWeight:
-            stateWeight[element] += .2
+            if element in tfScores:
+                bias = findTfIDF(element, tfScores,allTF)
+                stateWeight[element] += bias + .2
+            else:
+                stateWeight[element] += .2
         else:
             stateWeight[element] = .2
     
@@ -86,14 +97,17 @@ def findLoc(input1, cities, cityPop, tfScores):
     
     for city, score in sortedCities:
         match = cities[
-        (cities["city"].str.upper() == city.upper()) &
-        (cities["state_name"].str.upper() == finalStatePrediction.upper())
+        (cities["city"].str.lower() == city.lower()) &
+        (cities["state_name"].str.lower() == finalStatePrediction.lower())
     ]
 
         if not match.empty:
             finalCityPrediction = city
             break
     return finalCityPrediction, finalStatePrediction
+
+
+
 
 def tfIDF(inputTerm, resumes):
     inputTerm = inputTerm.strip(string.punctuation).lower()
@@ -134,44 +148,37 @@ def tfIDF(inputTerm, resumes):
     return scores
 
 
-def findTF(resumes):
-    allTF = []
+def findTF(resume):
+    tf = {}
+    totalTerms = 0
 
-    for resume in resumes:
-        tf = {}
-        totalTerms = 0
-        for term in resume.split():
+    for line in resume:
+        for term in line.split():
             term = term.strip(string.punctuation).lower()
-
             if term == "":
                 continue
             tf[term] = tf.get(term, 0) + 1
             totalTerms += 1
-        finalTF = {}
 
-        for term in tf:
-            finalTF[term] = tf[term] / totalTerms
-        allTF.append(finalTF)
+    if totalTerms == 0:
+        return {}
+    for term in tf:
+        tf[term] = tf[term] / totalTerms
 
-    return allTF
+    return tf
 
-def findTfIDF(inputTerm, allTF):
-    
+def findTfIDF(inputTerm, currentTF, allTF):
     inputTerm = inputTerm.strip(string.punctuation).lower()
     N = len(allTF)
     DF = 0
-    
-    for resumeTF in allTF:
-        if inputTerm in resumeTF:
+
+    for res in allTF:
+        if inputTerm in res:
             DF += 1
     if DF == 0:
-        return [0] * N
-    
+        return 0
+
     idf = math.log(N / DF)
-    scores = []
+    tf = currentTF.get(inputTerm, 0)
 
-    for resumeTF in allTF:
-        tfScore = resumeTF.get(inputTerm, 0)
-        scores.append(tfScore * idf)
-
-    return scores
+    return tf * idf
