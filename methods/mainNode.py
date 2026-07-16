@@ -7,6 +7,10 @@ from locationEmbedding import findTfIDF
 import spacy
 from pypdf import PdfReader
 from docx import Document
+import mysql.connector
+from dbAgent import fetch
+from dbAgent import update_term
+import string
 
 def uploadRes(resPath):
     
@@ -21,23 +25,47 @@ def uploadRes(resPath):
             text += page.extract_text()
         lines = text.split("\n")
         lines = [line.strip() for line in lines if line.strip()]
-        return extVar, lines
+        
     elif extension[-1] == "docx":
         doc = Document(resPath)
         lines = []
         for line in doc.paragraphs:
             lines.append(line.text)
-        return extVar, lines
+            
     elif extension[-1] == "txt":
         #input is already a string
         with open(resPath, "r", encoding="utf-8") as file:
             lines = [line.strip() for line in file]
-        return extVar, lines
+            
     else:
         negResponse = "Error in extension type"
         return extVar, negResponse
+    
+    termSend(lines)
+    return extVar, lines
+    
+    
+def termSend(lines):
+
+    termMap = {}
+    for line in lines:
+        for word in line.split():
+            word = word.lower()
+            word = word.strip(string.punctuation)
+            
+            if word:
+                if word not in termMap:
+                    termMap[word] = 1
+                    update_term(word, True)
+                    
+                else:
+                    update_term(word, False)
+                    termMap[word] += 1
+                
+        
 
 if __name__ == "__main__":
+    
     model = spacy.load("en_core_web_sm")
     #input is an environmental variable
     citiesCSV = "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\Datasets\\uscities.csv"
@@ -71,3 +99,4 @@ if __name__ == "__main__":
         print(f"Resume #{i}\nCity: {city}\nState: {state}")
 
         #print(f"Resume #{i}\n\n {lines}")
+    
