@@ -11,6 +11,11 @@ import mysql.connector
 from dbAgent import fetch
 from dbAgent import update_term
 import string
+from sentence_transformers import SentenceTransformer
+from findPosition import getPos
+from findPosition import posSkills
+
+
 
 def uploadRes(resPath):
     
@@ -62,9 +67,47 @@ def termSend(lines):
                     update_term(word, False)
                     termMap[word] += 1
                 
-        
+def encodeTerms(vectorModel):
+    tempTitle = "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\Datasets\\job_dataset.csv"
+    titleSet = pd.read_csv(tempTitle)
 
+    encodedMap = {}
+
+    titleSet = (
+        titleSet["Titles"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .str.lower()
+        .unique()
+    )
+
+    for title in titleSet:
+        encodedMap[title] = vectorModel.encode(title)
+
+    return encodedMap
+
+def encodeSkills(vectorModel):
+    tempTitle = "C:\\Users\Acey\\Downloads\\Dove Agent Build\\Datasets\\job_dataset.csv"
+    titleSet = pd.read_csv(tempTitle)
+    encodedMap = {}
+    skillSet = titleSet["Skills"].dropna().astype(str).str.lower().unique()
+
+    for skills in titleSet["Skills"].dropna():
+        for skill in skills.split(","):
+            skill = skill.strip().lower()
+
+            if skill not in encodedMap:
+                encodedMap[skill] = vectorModel.encode(skill)
+    return encodedMap
+        
 if __name__ == "__main__":
+    
+    vectorModel = SentenceTransformer("all-MiniLM-L6-v2")
+    encodedMap = encodeTerms(vectorModel)
+    encodedSkills = encodeSkills(vectorModel)
+    
+    print(list(encodedMap.keys())[:20])
     
     model = spacy.load("en_core_web_sm")
     #input is an environmental variable
@@ -94,6 +137,9 @@ if __name__ == "__main__":
     
     for i in range(20):
         lines = example[i].split("\n")
+        
+        pos, val = getPos(lines,encodedMap,encodedSkills, vectorModel)
+        print(f"Resume #{i}\nPosition Prediction: {pos}\Value: {val}")
         
         city, state = findLoc(lines, cities, cityPopulation, tfScores)
         print(f"Resume #{i}\nCity: {city}\nState: {state}")
