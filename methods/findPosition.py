@@ -5,7 +5,7 @@ from sentence_transformers import util
 
 
 #var = lines in main.py
-def getPos(rawTxt, encodedMap, model):
+def getPos(rawTxt, encodedMap, encodedSkills, model):
     tempTitle = "C:\\Users\Acey\\Downloads\\Dove Agent Build\\Datasets\\job_dataset.csv"
     titleSet = pd.read_csv(tempTitle)
     posSet = titleSet["Title"].dropna().astype(str).str.lower().unique()
@@ -57,8 +57,6 @@ def getPos(rawTxt, encodedMap, model):
 
 
         for term in words:
-            
-            #term = term.strip(".,;()[]").lower()
                 
             if term in posSet:
                 if term in termWeights:
@@ -66,8 +64,8 @@ def getPos(rawTxt, encodedMap, model):
                 else:
                     termWeights[term] = tWeight
             else:
-                #bestChoices = embedded vectors, topPick term name
-                topPick = posSkills(term, encodedMap, model)
+
+                topPick = posSkills(term, encodedSkills, model)
                 for name,val in topPick.items():
                     if name in options:
                         options[name] += val
@@ -79,36 +77,49 @@ def getPos(rawTxt, encodedMap, model):
                     choice2 = max(options, key=options.get)
                     choice2val = max(options.values())
 
-    for name, val in finalPicks.items():
-        if name in options:
-            options[name] += val
-        else:
-            options[name] = val
-
-    
-    choice3 = gram3
-    choice3Val = gram3Val
-    choice4 = gram2
-    choice4Val = gram2Val
-
-    if not termWeights:
-        print("error")
-        choice1 = None
-    else:
+    if termWeights:
         choice1 = max(termWeights, key=termWeights.get)
-        choice1val = max(termWeights.values())
-    if choice1val > choice2val:
-        if choice1val == 0:
-            return 0
-        else:
-            return (choice1,choice1val)
-    elif choice2val > choice1val:
-        if choice2val == 0:
-            return 0
-        else:
-            return (choice2,choice2val)
+        choice1val = termWeights[choice1]
     else:
-        print("error")
+        choice1 = None
+        choice1val = 0
+
+    if options:
+        choice2 = max(options, key=options.get)
+        choice2val = options[choice2]
+    else:
+        choice2 = None
+        choice2val = 0
+
+    if finalPicks:
+        ngramBest = max(finalPicks, key=finalPicks.get)
+        ngramBestVal = finalPicks[ngramBest]
+    else:
+        ngramBest = None
+        ngramBestVal = 0
+
+
+    choices = [
+    (choice1, choice1val),
+    (choice2, choice2val),
+    (ngramBest, ngramBestVal)
+    ]
+
+    choices = [
+        choice
+        for choice in choices
+        if choice[0] is not None
+    ]
+
+    if not choices:
+        return 0
+    bestChoice, bestValue = max(
+        choices,
+        key=lambda choice: choice[1]
+    )
+    if bestValue <= 0:
+        return 0
+    return bestChoice, bestValue
     
 
 
