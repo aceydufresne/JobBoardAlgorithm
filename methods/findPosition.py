@@ -56,9 +56,9 @@ def getPos(rawTxt, encodedMap, model):
                     finalPicks[name] = val
 
 
-        for term in line:
+        for term in words:
             
-            term = term.strip(".,;()[]").lower()
+            #term = term.strip(".,;()[]").lower()
                 
             if term in posSet:
                 if term in termWeights:
@@ -78,7 +78,19 @@ def getPos(rawTxt, encodedMap, model):
                 else:
                     choice2 = max(options, key=options.get)
                     choice2val = max(options.values())
-            
+
+    for name, val in finalPicks.items():
+        if name in options:
+            options[name] += val
+        else:
+            options[name] = val
+
+    
+    choice3 = gram3
+    choice3Val = gram3Val
+    choice4 = gram2
+    choice4Val = gram2Val
+
     if not termWeights:
         print("error")
         choice1 = None
