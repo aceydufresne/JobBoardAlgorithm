@@ -26,42 +26,37 @@ def getPos(rawTxt, encodedMap, model):
     
     
     for line in rawTxt:
-        line = line.split()
         ngram = []
         ngram2 = []
-            
+        words = [
+        word.strip(".,;()[]").lower()
+        for word in line.split()
+    ]
+
+        for i in range(len(words) - 3 + 1):
+            gram = " ".join(words[i:i + 3])
+
+            pick3 = posSkills(gram, encodedMap, model)
+
+            for name, val in pick3.items():
+                if name in finalPicks:
+                    finalPicks[name] += val
+                else:
+                    finalPicks[name] = val
+
+        for j in range(len(words) - 2 + 1):
+            gram = " ".join(words[j:j + 2])
+
+            pick2 = posSkills(gram, encodedMap, model)
+
+            for name, val in pick2.items():
+                if name in finalPicks:
+                    finalPicks[name] += val
+                else:
+                    finalPicks[name] = val
+
+
         for term in line:
-            
-            for i in range(len(line) - 3 + 1):
-                ngram.append(tuple(line[i:i+3]))
-                pick3 = posSkills(ngram, encodedMap, model)
-                for name, val in pick3.items():
-                    if name in options:
-                        options[name] += val
-                    else:
-                        options[name] = val
-                if not options:
-                    gram3 = None
-                else:
-                    gram3 = max(options, key = options.get)
-                    gram3Val = max(options.values())
-                finalPicks[gram3] = gram3Val
-                
-            for j in range(len(line) - 2 + 1):
-                ngram2.append(tuple(line[j:j+3]))
-                pick2 = posSkills(ngram2, encodedMap, model)
-                for name, val in pick3.items():
-                    if name in options:
-                        options[name] += val
-                    else:
-                        options[name] = val
-                if not options:
-                    gram2 = None
-                else:
-                    gram2 = max(options, key = options.get)
-                    gram2Val = max(options.values())
-                finalPicks[gram2] = gram2Val
-                
             
             term = term.strip(".,;()[]").lower()
                 
