@@ -14,7 +14,8 @@ import string
 from sentence_transformers import SentenceTransformer
 from findPosition import getPos
 from findPosition import posSkills
-
+from linkedIn_Agent import runScraper
+from linkedIn_Agent import getCity
 
 
 def uploadRes(resPath):
@@ -74,7 +75,7 @@ def encodeTerms(vectorModel):
     encodedMap = {}
 
     titleSet = (
-        titleSet["Titles"]
+        titleSet["Title"]
         .dropna()
         .astype(str)
         .str.strip()
@@ -88,61 +89,151 @@ def encodeTerms(vectorModel):
     return encodedMap
 
 def encodeSkills(vectorModel):
-    tempTitle = "C:\\Users\Acey\\Downloads\\Dove Agent Build\\Datasets\\job_dataset.csv"
+    tempTitle = (
+        "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\"
+        "Datasets\\job_dataset.csv"
+    )
+
     titleSet = pd.read_csv(tempTitle)
     encodedMap = {}
-    skillSet = titleSet["Skills"].dropna().astype(str).str.lower().unique()
 
-    for skills in titleSet["Skills"].dropna():
-        for skill in skills.split(","):
+    for _, row in titleSet.iterrows():
+        if pd.isna(row["Title"]) or pd.isna(row["Skills"]):
+            continue
+
+        title = str(row["Title"]).strip().lower()
+
+        for skill in str(row["Skills"]).split(","):
             skill = skill.strip().lower()
 
+            if not skill:
+                continue
+
             if skill not in encodedMap:
-                encodedMap[skill] = vectorModel.encode(skill)
+                encodedMap[skill] = {
+                    "vector": vectorModel.encode(skill),
+                    "titles": []
+                }
+
+            if title not in encodedMap[skill]["titles"]:
+                encodedMap[skill]["titles"].append(title)
+
     return encodedMap
         
 if __name__ == "__main__":
-    
+
     vectorModel = SentenceTransformer("all-MiniLM-L6-v2")
     encodedMap = encodeTerms(vectorModel)
     encodedSkills = encodeSkills(vectorModel)
-    
-    print(list(encodedMap.keys())[:20])
-    
+
+    #print(list(encodedMap.keys())[:20])
+
     model = spacy.load("en_core_web_sm")
-    #input is an environmental variable
-    citiesCSV = "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\Datasets\\uscities.csv"
+
+    citiesCSV = (
+        "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\"
+        "Datasets\\uscities.csv"
+    )
     cities = pd.read_csv(citiesCSV)
-    inputPath =  "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\Agent Modules\\Dufresne Resume Spring 2025 (1).pdf"
-    
-    resExam = "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\Datasets\\Resume.csv"
+
+    inputPath = (
+        "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\"
+        "Agent Modules\\Dufresne Resume Spring 2025 (1).pdf"
+    )
+
+    resExam = (
+        "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\"
+        "Datasets\\Resume.csv"
+    )
     resumes = pd.read_csv(resExam)
     example = resumes["Resume_str"]
-    
-    cityPop = "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\Datasets\\cityPop.csv"
+
+    cityPop = (
+        "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\"
+        "Datasets\\cityPop.csv"
+    )
     cityPopulation = pd.read_csv(cityPop)
-    
+
     extVar, text = uploadRes(inputPath)
+
     if text == "Error in extension type":
         print(text)
-    
+    else:
+        city, state = findLoc(
+            text,
+            cities,
+            cityPopulation,
+            []
+        )
+
     tfScores = []
-    for resume in example:
-        lines = resume.split("\n")
+
+    for resume in example.dropna():
+        lines = str(resume).split("\n")
         temp = findTF(lines)
         tfScores.append(temp)
-    
-    city,state = findLoc(text, cities, cityPopulation, tfScores)
-    
-    
-    for i in range(20):
-        lines = example[i].split("\n")
-        
-        pos, val = getPos(lines,encodedMap,encodedSkills, vectorModel)
-        print(f"Resume #{i}\nPosition Prediction: {pos}\Value: {val}")
-        
-        city, state = findLoc(lines, cities, cityPopulation, tfScores)
-        print(f"Resume #{i}\nCity: {city}\nState: {state}")
 
-        #print(f"Resume #{i}\n\n {lines}")
-    
+    lastPosition = None
+    lastCity = None
+
+    for i in range(min(20, len(example))):
+        resumeText = example.iloc[i]
+
+        if pd.isna(resumeText):
+            print(f"Resume #{i} is empty.")
+            continue
+
+        lines = str(resumeText).split("\n")
+
+        prediction = getPos(
+            lines,
+            encodedMap,
+            encodedSkills,
+            vectorModel
+        )
+
+        if prediction == 0:
+            pos = None
+            val = 0
+            matchedSkill = None
+            source = None
+        else:
+            pos = prediction["title"]
+            val = prediction["score"]
+            matchedSkill = prediction["skill"]
+            source = prediction["source"]
+
+        print(
+            f"Resume #{i}\n"
+            f"Position Prediction: {pos}\n"
+            f"Value: {val}\n"
+            f"Matched Skill: {matchedSkill}\n"
+            f"Source: {source}"
+        )
+
+        city, state = findLoc(
+            lines,
+            cities,
+            cityPopulation,
+            tfScores
+        )
+
+        print(
+            f"Resume #{i}\n"
+            f"City: {city}\n"
+            f"State: {state}"
+        )
+
+        if pos is not None:
+            lastPosition = pos
+
+        if city is not None:
+            lastCity = city
+
+    if lastPosition is not None and lastCity is not None:
+        results, embeddings = runScraper(
+            lastPosition,
+            lastCity
+        )
+    else:
+        print("No valid position and city available for the scraper.")
