@@ -16,7 +16,7 @@ def getData(title, city, state):
 
     with sync_playwright() as p:
         browser = p.chromium.connect_over_cdp(
-            "http://**.*.*.*:9222"
+            "http://127.0.0.1:9222"
         )
 
         if not browser.contexts:
@@ -79,7 +79,7 @@ def getData(title, city, state):
             if len(results) >= 20:
                 break
 
-
+            # Recreate the locator because clicking can update the page.
             job_cards = search_page.locator(job_card_selector)
 
             if index >= job_cards.count():
@@ -240,6 +240,7 @@ def getData(title, city, state):
                     f"{job_title}"
                 )
 
+            # Collect the description.
             description_elements = search_page.locator(
                 description_selector
             )
@@ -271,6 +272,7 @@ def getData(title, city, state):
                 except Exception:
                     continue
 
+            # Collect the company name.
             company_elements = search_page.locator(
                 company_selector
             )
