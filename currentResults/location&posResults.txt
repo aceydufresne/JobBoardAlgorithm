@@ -1,0 +1,160 @@
+Resume #0
+Position Prediction: marketing specialist
+Value: 67.50123144686222
+Matched Skill: None
+Source: title phrase
+Resume #0
+City: commerce
+State: missouri
+Resume #1
+Position Prediction: iot engineer
+Value: 65.99164018034935
+Matched Skill: c
+Source: skill
+Resume #1
+City: media
+State: connecticut
+Resume #2
+Position Prediction: iot engineer
+Value: 102.79389223456383
+Matched Skill: c
+Source: skill
+Resume #2
+City: topeka
+State: kansas
+Resume #3
+Position Prediction: iot engineer
+Value: 41.76132094860077
+Matched Skill: c
+Source: skill
+Resume #3
+City: tool
+State: texas
+Resume #4
+Position Prediction: iot engineer
+Value: 127.45101526379585
+Matched Skill: c
+Source: skill
+Resume #4
+City: university
+State: mississippi
+Resume #5
+Position Prediction: iot engineer
+Value: 64.1042215526104
+Matched Skill: c
+Source: skill
+Resume #5
+City: None
+State: None
+Resume #6
+Position Prediction: iot engineer
+Value: 55.237305000424385
+Matched Skill: c
+Source: skill
+Resume #6
+City: houston
+State: texas
+Resume #7
+Position Prediction: iot engineer
+Value: 96.730783700943
+Matched Skill: c
+Source: skill
+Resume #7
+City: None
+State: None
+Resume #8
+Position Prediction: iot engineer
+Value: 84.6799910068512
+Matched Skill: c
+Source: skill
+Resume #8
+City: lead
+State: north carolina
+Resume #9
+Position Prediction: iot engineer
+Value: 62.760091692209244
+Matched Skill: c
+Source: skill
+Resume #9
+City: None
+State: None
+Resume #10
+Position Prediction: iot engineer
+Value: 65.00545591115952
+Matched Skill: c
+Source: skill
+Resume #10
+City: mentor
+State: mississippi
+Resume #11
+Position Prediction: iot engineer
+Value: 109.38716492056847
+Matched Skill: c
+Source: skill
+Resume #11
+City: university
+State: mississippi
+Resume #12
+Position Prediction: iot engineer
+Value: 71.52381774783134
+Matched Skill: c
+Source: skill
+Resume #12
+City: None
+State: None
+Resume #13
+Position Prediction: iot engineer
+Value: 71.80001670122147
+Matched Skill: c
+Source: skill
+Resume #13
+City: union
+State: michigan
+Resume #14
+Position Prediction: iot engineer
+Value: 59.34937822818756
+Matched Skill: c
+Source: skill
+Resume #14
+City: None
+State: None
+Resume #15
+Position Prediction: iot engineer
+Value: 67.2939148247242
+Matched Skill: c
+Source: skill
+Resume #15
+City: None
+State: None
+Resume #16
+Position Prediction: iot engineer
+Value: 60.07339522242546
+Matched Skill: c
+Source: skill
+Resume #16
+City: severance
+State: kansas
+Resume #17
+Position Prediction: iot engineer
+Value: 102.07426580786705
+Matched Skill: c
+Source: skill
+Resume #17
+City: None
+State: None
+Resume #18
+Position Prediction: iot engineer
+Value: 52.249121367931366
+Matched Skill: c
+Source: skill
+Resume #18
+City: None
+State: None
+Resume #19
+Position Prediction: iot engineer
+Value: 78.6462689936161
+Matched Skill: c
+Source: skill
+Resume #19
+City: None
+State: None
