@@ -16,6 +16,7 @@ from findPosition import getPos
 from findPosition import posSkills
 from linkedIn_Agent import runScraper
 from linkedIn_Agent import getCity
+from zipRecruit_Agent import getData
 
 
 def uploadRes(resPath):
@@ -119,6 +120,24 @@ def encodeSkills(vectorModel):
                 encodedMap[skill]["titles"].append(title)
 
     return encodedMap
+
+
+def testPositions(posSet, encodedMap, encodedSkills, vectorModel, resumes):
+    results = []
+
+    for _, row in resumes.iterrows():
+        resume = row["Resume_str"]
+
+        if pd.isna(resume):
+            continue
+
+        rawTxt = str(resume).splitlines()
+
+        result = getPos(rawTxt,encodedMap,encodedSkills,vectorModel,posSet)
+        results.append(result)
+
+    return results
+        
         
 if __name__ == "__main__":
 
@@ -146,94 +165,21 @@ if __name__ == "__main__":
         "Datasets\\Resume.csv"
     )
     resumes = pd.read_csv(resExam)
-    example = resumes["Resume_str"]
+    
 
     cityPop = (
         "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\"
         "Datasets\\cityPop.csv"
     )
     cityPopulation = pd.read_csv(cityPop)
+    
+    tempTitle = ("C:\\Users\\Acey\\Downloads\\Dove Agent Build\\Datasets\\job_dataset.csv")
+    titleSet = pd.read_csv(tempTitle)
+    posSet = set(titleSet["Title"].dropna().astype(str).str.strip().str.lower())        
 
-    extVar, text = uploadRes(inputPath)
-
-    if text == "Error in extension type":
-        print(text)
-    else:
-        city, state = findLoc(
-            text,
-            cities,
-            cityPopulation,
-            []
-        )
-
-    tfScores = []
-
-    for resume in example.dropna():
-        lines = str(resume).split("\n")
-        temp = findTF(lines)
-        tfScores.append(temp)
-
-    lastPosition = None
-    lastCity = None
-
-    for i in range(min(20, len(example))):
-        resumeText = example.iloc[i]
-
-        if pd.isna(resumeText):
-            print(f"Resume #{i} is empty.")
-            continue
-
-        lines = str(resumeText).split("\n")
-
-        prediction = getPos(
-            lines,
-            encodedMap,
-            encodedSkills,
-            vectorModel
-        )
-
-        if prediction == 0:
-            pos = None
-            val = 0
-            matchedSkill = None
-            source = None
-        else:
-            pos = prediction["title"]
-            val = prediction["score"]
-            matchedSkill = prediction["skill"]
-            source = prediction["source"]
-
-        print(
-            f"Resume #{i}\n"
-            f"Position Prediction: {pos}\n"
-            f"Value: {val}\n"
-            f"Matched Skill: {matchedSkill}\n"
-            f"Source: {source}"
-        )
-
-        city, state = findLoc(
-            lines,
-            cities,
-            cityPopulation,
-            tfScores
-        )
-
-        print(
-            f"Resume #{i}\n"
-            f"City: {city}\n"
-            f"State: {state}"
-        )
-
-        if pos is not None:
-            lastPosition = pos
-
-        if city is not None:
-            lastCity = city
-
-    if lastPosition is not None and lastCity is not None:
-        results, embeddings = runScraper(
-            lastPosition,
-            lastCity
-        )
-    else:
-        print("No valid position and city available for the scraper.")
+    #populating databse
+    #posResult = testPositions(posSet, encodedMap, encodedSkills, vectorModel, resumes)
+    
+    extVar, rawExample = uploadRes(inputPath)
+    posResult = getPos(rawExample,encodedMap,encodedSkills,vectorModel,posSet)
+    print(posResult)
