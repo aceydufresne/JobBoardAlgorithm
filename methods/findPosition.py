@@ -3,27 +3,13 @@ import nltk
 from sentence_transformers import SentenceTransformer
 from sentence_transformers import util
 
-
 #var = lines in main.py
 import pandas as pd
 from sentence_transformers import util
+import mysql.connector
+import numpy as np
 
-
-def getPos(rawTxt, encodedMap, encodedSkills, model):
-    tempTitle = (
-        "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\"
-        "Datasets\\job_dataset.csv"
-    )
-
-    titleSet = pd.read_csv(tempTitle)
-
-    posSet = set(
-        titleSet["Title"]
-        .dropna()
-        .astype(str)
-        .str.strip()
-        .str.lower()
-    )
+def getPos(rawTxt, encodedMap, encodedSkills, model, posSet):
 
     tWeight = 0.2
     termWeights = {}
@@ -165,9 +151,49 @@ def getPos(rawTxt, encodedMap, encodedSkills, model):
     return bestChoice
     
 
+def connect(database):
+    connection = mysql.connector.connect(host = "localhost", user = "***", password = "***", database = database)
+    return connection
+
+
+import numpy as np
 
 def posSkills(term, encodedSkills, vectorModel):
-    embedding = vectorModel.encode(term)
+
+    connection = connect("embeddings")
+    cursor = connection.cursor()
+
+    cursor.execute(
+        "SELECT vector FROM term_vectors WHERE term = %s",
+        (term,)
+    )
+
+    termResult = cursor.fetchone()
+
+    if termResult is None:
+        embedding = vectorModel.encode(term)
+
+        cursor.execute(
+            """
+            INSERT INTO term_vectors (term, vector)
+            VALUES (%s, %s)
+            """,
+            (
+                term,
+                embedding.astype(np.float32).tobytes()
+            )
+        )
+
+        connection.commit()
+
+    else:
+        embedding = np.frombuffer(
+            termResult[0],
+            dtype=np.float32
+        )
+
+    cursor.close()
+    connection.close()
 
     bestSkill = None
     bestScore = -1
@@ -180,7 +206,10 @@ def posSkills(term, encodedSkills, vectorModel):
             bestScore = 1.0
             break
 
-        score = util.cos_sim(embedding, vector).item()
+        score = util.cos_sim(
+            embedding,
+            vector
+        ).item()
 
         if score > bestScore:
             bestScore = score
@@ -198,7 +227,40 @@ def posSkills(term, encodedSkills, vectorModel):
     }
 
 def posTitles(term, encodedTitles, vectorModel):
-    embedding = vectorModel.encode(term)
+    connection = connect("embeddings")
+    cursor = connection.cursor()
+
+    cursor.execute(
+        "SELECT vector FROM term_vectors WHERE term = %s",
+        (term,)
+    )
+
+    termResult = cursor.fetchone()
+
+    if termResult is None:
+        embedding = vectorModel.encode(term)
+
+        cursor.execute(
+            """
+            INSERT INTO term_vectors (term, vector)
+            VALUES (%s, %s)
+            """,
+            (
+                term,
+                embedding.astype(np.float32).tobytes()
+            )
+        )
+
+        connection.commit()
+
+    else:
+        embedding = np.frombuffer(
+            termResult[0],
+            dtype=np.float32
+        )
+
+    cursor.close()
+    connection.close()
 
     bestTitle = None
     bestScore = -1
