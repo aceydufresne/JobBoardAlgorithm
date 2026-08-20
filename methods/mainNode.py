@@ -17,6 +17,7 @@ from findPosition import posSkills
 from linkedIn_Agent import runScraper
 from linkedIn_Agent import getCity
 from zipRecruit_Agent import getData
+from glassDoor_Agent import getGlassData
 
 
 def uploadRes(resPath):
@@ -181,5 +182,13 @@ if __name__ == "__main__":
     #posResult = testPositions(posSet, encodedMap, encodedSkills, vectorModel, resumes)
     
     extVar, rawExample = uploadRes(inputPath)
-    posResult = getPos(rawExample,encodedMap,encodedSkills,vectorModel,posSet)
-    print(posResult)
+    allTF = findTF(rawExample)
+    city, state = findLoc(rawExample, cities, cityPopulation, allTF)
+    position = getPos(rawExample,encodedMap,encodedSkills,vectorModel,posSet)
+    #print("POSITION VALUE:", position)
+    #print("POSITION TYPE:", type(position))
+    #prediction = getData(position["title"], city, state)
+    #print(prediction)
+    title = position["title"]
+    results = getGlassData(title, city, state)
+    print(results)
