@@ -1,11 +1,12 @@
 import mysql.connector
 import sys
 
+
     
 def fetch(username):
-    db = mysql.connector.connect(host = "***",
-                                 user = "***",
-                                 passwd = "***",
+    db = mysql.connector.connect(host = "localhost",
+                                 user = "root",
+                                 passwd = "***!",
                                  database = "***")
     mycursor = db.cursor()
     sql = """
@@ -28,8 +29,8 @@ WHERE username = %s
 
 def update_term(term, isFirst):
     
-    db = mysql.connector.connect(host = "***",
-                                 user = "***",
+    db = mysql.connector.connect(host = "localhost",
+                                 user = "root",
                                  passwd = "***",
                                  database = "***")
     mycursor = db.cursor()
@@ -67,7 +68,9 @@ def update_term(term, isFirst):
     mycursor.close()
     db.close()
     return termCount, docCount
-        
+
+
+
     
 if __name__ == "__main__":
     name = "example"
