@@ -1,7 +1,7 @@
 from urllib.parse import quote_plus, urljoin
 from playwright.sync_api import (sync_playwright,TimeoutError as PlaywrightTimeoutError)
 import re
-DEBUGGING_URL = "http://127.0.0.1:9222"
+DEBUGGING_URL = "***"
 
 def getGlassData(title, city, state):
     maximum_results = 10
