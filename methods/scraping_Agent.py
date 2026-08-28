@@ -1,239 +1,218 @@
-import fitz
-import os
-import pandas as pd
-from locationEmbedding import findLoc
-from locationEmbedding import findTF
-from locationEmbedding import findTfIDF
-import spacy
-from pypdf import PdfReader
-from docx import Document
-import mysql.connector
-from dbAgent import fetch
-from dbAgent import update_term
-import string
+import time
+import csv
+import schedule
+from glassDoor_Agent import getGlassData
+#from glassDoor_Agent import startAgent
+#from glassDoor_Agent import stopAgent
 from sentence_transformers import SentenceTransformer
-from findPosition import getPos
-from findPosition import posSkills
-from linkedIn_Agent import runScraper
-from linkedIn_Agent import getCity
+from sentence_transformers.util import cos_sim
 
 
-def uploadRes(resPath):
-    
-    #sort based upon if the input is already a txt format,
-    #or pdf extension
-    extVar = None
-    extension = resPath.split(".")
-    if extension[-1] == "pdf":
-        reader = PdfReader(resPath)
-        text = ""
-        for page in reader.pages:
-            text += page.extract_text()
-        lines = text.split("\n")
-        lines = [line.strip() for line in lines if line.strip()]
-        
-    elif extension[-1] == "docx":
-        doc = Document(resPath)
-        lines = []
-        for line in doc.paragraphs:
-            lines.append(line.text)
-            
-    elif extension[-1] == "txt":
-        #input is already a string
-        with open(resPath, "r", encoding="utf-8") as file:
-            lines = [line.strip() for line in file]
-            
-    else:
-        negResponse = "Error in extension type"
-        return extVar, negResponse
-    
-    termSend(lines)
-    return extVar, lines
-    
-    
-def termSend(lines):
+def testSchedule():
+    state, cities = stateSet("Georgia")
+    positions = getPositions()
+    runSchedule(cities, state, positions)
 
-    termMap = {}
-    for line in lines:
-        for word in line.split():
-            word = word.lower()
-            word = word.strip(string.punctuation)
-            
-            if word:
-                if word not in termMap:
-                    termMap[word] = 1
-                    update_term(word, True)
-                    
-                else:
-                    update_term(word, False)
-                    termMap[word] += 1
-                
-def encodeTerms(vectorModel):
-    tempTitle = "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\Datasets\\job_dataset.csv"
-    titleSet = pd.read_csv(tempTitle)
+def callTime(state, positions):
+    stateName, cities = stateSet(state)
 
-    encodedMap = {}
-
-    titleSet = (
-        titleSet["Title"]
-        .dropna()
-        .astype(str)
-        .str.strip()
-        .str.lower()
-        .unique()
+    schedule.every().day.at("09:30").do(
+        runSchedule,
+        cities,
+        stateName,
+        positions
     )
 
-    for title in titleSet:
-        encodedMap[title] = vectorModel.encode(title)
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
 
-    return encodedMap
+def stateSet(stateName):
+    if stateName == "Georgia":
+        cities = [
+        "Atlanta",
+        "Augusta-Richmond County",
+        "Columbus",
+        "Macon-Bibb County",
+        "Savannah",
+        "Athens-Clarke County",
+        "South Fulton",
+        "Sandy Springs",
+        "Roswell",
+        "Warner Robins",
+        "Johns Creek",
+        "Mableton",
+        "Albany",
+        "Alpharetta",
+        "Marietta",
+        "Stonecrest",
+        "Brookhaven",
+        "Smyrna",
+        "Valdosta",
+        "Dunwoody",
+        "Gainesville",
+        "Newnan",
+        "Peachtree Corners",
+        "Milton",
+        "Peachtree City",
+        "East Point",
+        "Rome",
+        "Douglasville",
+        "Woodstock",
+        "Tucker",
+        "Evans",
+        "Canton",
+        "Stockbridge",
+        "Hinesville",
+        "Kennesaw",
+        "Dalton",
+        "Statesboro",
+        "Martinez",
+        "Duluth",
+        "LaGrange",
+        "Redan",
+        "Lawrenceville",
+        "McDonough",
+        "Chamblee",
+        "Pooler",
+        "Union City",
+        "Carrollton",
+        "Sugar Hill",
+        "Decatur",
+        "Cartersville",
+        "Griffin",
+        "Perry",
+        "Acworth",
+        "Suwanee",
+        "Snellville",
+        "Candler-McAfee",
+        "Fayetteville",
+        "Kingsland",
+        "Forest Park",
+        "Winder",
+        "St. Marys",
+        "Thomasville",
+        "Holly Springs",
+        "Villa Rica",
+        "Conyers",
+        "North Decatur",
+        "Calhoun",
+        "Richmond Hill",
+        "Powder Springs",
+        "Norcross",
+        "Buford",
+        "North Druid Hills",
+        "Tifton",
+        "Grovetown",
+        "Lithia Springs",
+        "Fairburn",
+        "Milledgeville",
+        "St. Simons",
+        "Dublin",
+        "Americus",
+        "Monroe",
+        "Loganville",
+        "Lilburn",
+        "Brunswick",
+        "Braselton",
+        "Jefferson",
+        "Riverdale",
+        "Dallas",
+        "College Park",
+        "Moultrie",
+        "Covington",
+        "Clarkston",
+        "Bainbridge",
+        "Vinings",
+        "Belvedere Park",
+        "Wilmington Island",
+        "Waycross",
+        "Port Wentworth",
+        "Mountain Park CDP",
+        "Douglas"
+        ]
+        return stateName, cities
 
-def encodeSkills(vectorModel):
-    tempTitle = (
-        "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\"
-        "Datasets\\job_dataset.csv"
-    )
+def getPositions():
+    titlesPath = ("C:\\Users\\Acey\\Downloads\\Dove Agent Build\\" "Datasets\\titles.csv")
+    finalTitles = []
 
-    titleSet = pd.read_csv(tempTitle)
-    encodedMap = {}
+    with open(titlesPath,mode="r",encoding="utf-8-sig",newline="") as titleFile:
 
-    for _, row in titleSet.iterrows():
-        if pd.isna(row["Title"]) or pd.isna(row["Skills"]):
-            continue
-
-        title = str(row["Title"]).strip().lower()
-
-        for skill in str(row["Skills"]).split(","):
-            skill = skill.strip().lower()
-
-            if not skill:
+        reader = csv.reader(titleFile)
+        for row in reader:
+            if not row:
                 continue
 
-            if skill not in encodedMap:
-                encodedMap[skill] = {
-                    "vector": vectorModel.encode(skill),
-                    "titles": []
-                }
+            title = row[0].strip()
+            if title:
+                finalTitles.append(title)
+    return finalTitles
 
-            if title not in encodedMap[skill]["titles"]:
-                encodedMap[skill]["titles"].append(title)
 
-    return encodedMap
-        
+def runSchedule(cities, state, positions):
+    for city in cities:
+        for position in positions:
+            results = getGlassData(
+                position,
+                city,
+                state,
+            )
+
+
+def embedListing(description, model):
+    encodedDescription = {}
+    words = description.lower().split()
+
+    ngrams = []
+
+    for n in range(1, 4):
+        for i in range(len(words) - n + 1):
+            phrase = " ".join(words[i:i + n])
+            ngrams.append(phrase)
+
+
+    vectors = model.encode(ngrams)
+
+    for phrase, vector in zip(ngrams, vectors):
+        encodedDescription[phrase] = vector
+
+    return encodedDescription   
+
+
+
+
+def compareRes(resume, listing):
+    threshold = 0.70
+    matches = []
+
+    for resumeTerm, resumeVector in resume.items():
+
+        bestMatch = None
+        bestScore = -1.0
+
+        for listingTerm, listingVector in listing.items():
+
+            score = cos_sim(
+                resumeVector,
+                listingVector
+            ).item()
+
+            if score > bestScore:
+                bestScore = score
+                bestMatch = listingTerm
+
+        if bestScore >= threshold:
+            matches.append({
+                "resume_term": resumeTerm,
+                "listing_term": bestMatch,
+                "score": bestScore
+            })
+
+    return matches
+
+
+
 if __name__ == "__main__":
-
-    vectorModel = SentenceTransformer("all-MiniLM-L6-v2")
-    encodedMap = encodeTerms(vectorModel)
-    encodedSkills = encodeSkills(vectorModel)
-
-    #print(list(encodedMap.keys())[:20])
-
-    model = spacy.load("en_core_web_sm")
-
-    citiesCSV = (
-        "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\"
-        "Datasets\\uscities.csv"
-    )
-    cities = pd.read_csv(citiesCSV)
-
-    inputPath = (
-        "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\"
-        "Agent Modules\\Dufresne Resume Spring 2025 (1).pdf"
-    )
-
-    resExam = (
-        "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\"
-        "Datasets\\Resume.csv"
-    )
-    resumes = pd.read_csv(resExam)
-    example = resumes["Resume_str"]
-
-    cityPop = (
-        "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\"
-        "Datasets\\cityPop.csv"
-    )
-    cityPopulation = pd.read_csv(cityPop)
-
-    extVar, text = uploadRes(inputPath)
-
-    if text == "Error in extension type":
-        print(text)
-    else:
-        city, state = findLoc(
-            text,
-            cities,
-            cityPopulation,
-            []
-        )
-
-    tfScores = []
-
-    for resume in example.dropna():
-        lines = str(resume).split("\n")
-        temp = findTF(lines)
-        tfScores.append(temp)
-
-    lastPosition = None
-    lastCity = None
-
-    for i in range(min(20, len(example))):
-        resumeText = example.iloc[i]
-
-        if pd.isna(resumeText):
-            print(f"Resume #{i} is empty.")
-            continue
-
-        lines = str(resumeText).split("\n")
-
-        prediction = getPos(
-            lines,
-            encodedMap,
-            encodedSkills,
-            vectorModel
-        )
-
-        if prediction == 0:
-            pos = None
-            val = 0
-            matchedSkill = None
-            source = None
-        else:
-            pos = prediction["title"]
-            val = prediction["score"]
-            matchedSkill = prediction["skill"]
-            source = prediction["source"]
-
-        print(
-            f"Resume #{i}\n"
-            f"Position Prediction: {pos}\n"
-            f"Value: {val}\n"
-            f"Matched Skill: {matchedSkill}\n"
-            f"Source: {source}"
-        )
-
-        city, state = findLoc(
-            lines,
-            cities,
-            cityPopulation,
-            tfScores
-        )
-
-        print(
-            f"Resume #{i}\n"
-            f"City: {city}\n"
-            f"State: {state}"
-        )
-
-        if pos is not None:
-            lastPosition = pos
-
-        if city is not None:
-            lastCity = city
-
-    if lastPosition is not None and lastCity is not None:
-        results, embeddings = runScraper(
-            lastPosition,
-            lastCity
-        )
-    else:
-        print("No valid position and city available for the scraper.")
+    positions = getPositions()
+    callTime("Georgia", positions)
