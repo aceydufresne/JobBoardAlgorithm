@@ -15,9 +15,16 @@ from sentence_transformers import SentenceTransformer
 from findPosition import getPos
 from findPosition import posSkills
 from linkedIn_Agent import runScraper
+from linkedIn_Agent import getLinkedData
 from linkedIn_Agent import getCity
 from zipRecruit_Agent import getData
 from glassDoor_Agent import getGlassData
+import numpy as np
+from scrapingAgent import embedListing
+from scrapingAgent import compareRes
+import pandas as pd
+import numpy as np
+import mysql.connector
 
 
 def uploadRes(resPath):
@@ -70,57 +77,150 @@ def termSend(lines):
                     update_term(word, False)
                     termMap[word] += 1
                 
-def encodeTerms(vectorModel):
-    tempTitle = "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\Datasets\\job_dataset.csv"
-    titleSet = pd.read_csv(tempTitle)
 
+
+jobDatasetPath = (
+    r"C:\Users\Acey\Downloads\Dove Agent Build"
+    r"\Datasets\job_dataset.csv"
+)
+
+
+def encodeTerms(model):
     encodedMap = {}
 
-    titleSet = (
-        titleSet["Title"]
-        .dropna()
-        .astype(str)
-        .str.strip()
-        .str.lower()
-        .unique()
+    jobData = pd.read_csv(jobDatasetPath)
+
+    conn = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="***",
+        database="encodedTerms"
     )
 
-    for title in titleSet:
-        encodedMap[title] = vectorModel.encode(title)
+    cursor = conn.cursor()
+
+    for title in jobData["Title"]:
+        
+        if pd.isna(title):
+            continue
+        
+        title = title.lower().strip()
+
+        if title in encodedMap:
+            continue
+
+        cursor.execute(
+            "SELECT vector FROM term_vectors WHERE term = %s",
+            (title,)
+        )
+
+        result = cursor.fetchone()
+
+        if result is not None:
+
+            vector = np.frombuffer(
+                result[0],
+                dtype=np.float32
+            )
+
+        else:
+
+            vector = model.encode(title)
+            cursor.execute(
+                """
+                INSERT INTO term_vectors (term, vector)
+                VALUES (%s, %s)
+                """,
+                (
+                    title,
+                    vector.astype(np.float32).tobytes()
+                )
+            )
+
+        encodedMap[title] = vector
+
+    conn.commit()
+    cursor.close()
+    conn.close()
 
     return encodedMap
 
-def encodeSkills(vectorModel):
-    tempTitle = (
-        "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\"
-        "Datasets\\job_dataset.csv"
+def encodeSkills(model):
+    encodedSkills = {}
+
+    path = r"C:\Users\Acey\Downloads\Dove Agent Build\Datasets\job_dataset.csv"
+    jobData = pd.read_csv(path)
+
+    conn = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="***",
+        database="encodedTerms"
     )
 
-    titleSet = pd.read_csv(tempTitle)
-    encodedMap = {}
+    cursor = conn.cursor()
 
-    for _, row in titleSet.iterrows():
+    for _, row in jobData.iterrows():
+
+        # Skip incomplete rows
         if pd.isna(row["Title"]) or pd.isna(row["Skills"]):
             continue
 
-        title = str(row["Title"]).strip().lower()
+        title = row["Title"].lower().strip()
+        skills = row["Skills"].split(";")
 
-        for skill in str(row["Skills"]).split(","):
-            skill = skill.strip().lower()
+        for skill in skills:
+            skill = skill.lower().strip()
 
             if not skill:
                 continue
 
-            if skill not in encodedMap:
-                encodedMap[skill] = {
-                    "vector": vectorModel.encode(skill),
-                    "titles": []
-                }
+            if len(skill) > 255:
+                print("Skipping oversized skill:")
+                print(skill)
+                continue
 
-            if title not in encodedMap[skill]["titles"]:
-                encodedMap[skill]["titles"].append(title)
+            if skill in encodedSkills:
+                encodedSkills[skill]["titles"].add(title)
+                continue
 
-    return encodedMap
+            cursor.execute(
+                "SELECT vector FROM term_vectors WHERE term = %s",
+                (skill,)
+            )
+
+            result = cursor.fetchone()
+
+            if result is not None:
+                vector = np.frombuffer(
+                    result[0],
+                    dtype=np.float32
+                )
+
+            else:
+                vector = model.encode(skill)
+
+                cursor.execute(
+                    """
+                    INSERT INTO term_vectors (term, vector)
+                    VALUES (%s, %s)
+                    """,
+                    (
+                        skill,
+                        vector.astype(np.float32).tobytes()
+                    )
+                )
+
+            encodedSkills[skill] = {
+                "vector": vector,
+                "titles": {title}
+            }
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return encodedSkills
 
 
 def testPositions(posSet, encodedMap, encodedSkills, vectorModel, resumes):
@@ -143,10 +243,9 @@ def testPositions(posSet, encodedMap, encodedSkills, vectorModel, resumes):
 if __name__ == "__main__":
 
     vectorModel = SentenceTransformer("all-MiniLM-L6-v2")
+
     encodedMap = encodeTerms(vectorModel)
     encodedSkills = encodeSkills(vectorModel)
-
-    #print(list(encodedMap.keys())[:20])
 
     model = spacy.load("en_core_web_sm")
 
@@ -166,29 +265,104 @@ if __name__ == "__main__":
         "Datasets\\Resume.csv"
     )
     resumes = pd.read_csv(resExam)
-    
 
     cityPop = (
         "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\"
         "Datasets\\cityPop.csv"
     )
     cityPopulation = pd.read_csv(cityPop)
-    
-    tempTitle = ("C:\\Users\\Acey\\Downloads\\Dove Agent Build\\Datasets\\job_dataset.csv")
-    titleSet = pd.read_csv(tempTitle)
-    posSet = set(titleSet["Title"].dropna().astype(str).str.strip().str.lower())        
 
-    #populating databse
-    #posResult = testPositions(posSet, encodedMap, encodedSkills, vectorModel, resumes)
-    
+    tempTitle = (
+        "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\"
+        "Datasets\\job_dataset.csv"
+    )
+
+    titleSet = pd.read_csv(tempTitle)
+
+    posSet = set(
+        titleSet["Title"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .str.lower()
+    )
+
     extVar, rawExample = uploadRes(inputPath)
+
     allTF = findTF(rawExample)
-    city, state = findLoc(rawExample, cities, cityPopulation, allTF)
-    position = getPos(rawExample,encodedMap,encodedSkills,vectorModel,posSet)
-    #print("POSITION VALUE:", position)
-    #print("POSITION TYPE:", type(position))
-    #prediction = getData(position["title"], city, state)
-    #print(prediction)
-    title = position["title"]
-    results = getGlassData(title, city, state)
-    print(results)
+
+    city, state = findLoc(
+        rawExample,
+        cities,
+        cityPopulation,
+        allTF
+    )
+
+    position = getPos(
+        rawExample,
+        encodedMap,
+        encodedSkills,
+        vectorModel,
+        posSet
+    )
+
+
+
+    zipResults = getData(
+        position["title"],
+        city,
+        state
+    )
+
+    glassResults = getGlassData(
+        position["title"],
+        city,
+        state
+    )
+
+    allJobs = zipResults + glassResults
+
+
+    embeddedListings = []
+
+    for job in allJobs:
+
+        description = job["description"]
+
+        if not description:
+            continue
+
+        embedded = embedListing(
+            description,
+            vectorModel
+        )
+
+        embeddedListings.append({
+            "title": job["title"],
+            "url": job["url"],
+            "description": description,
+            "embeddings": embedded
+        })
+        
+        
+    resumeText = " ".join(rawExample)
+
+    embeddedResume = embedListing(
+        resumeText,
+        vectorModel
+    )
+
+    allMatches = []
+
+    for listing in embeddedListings:
+
+        matches = compareRes(
+            embeddedResume,
+            listing["embeddings"]
+        )
+
+        allMatches.append({
+            "title": listing["title"],
+            "url": listing["url"],
+            "matches": matches
+        })
