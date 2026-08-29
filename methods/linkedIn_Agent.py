@@ -21,8 +21,8 @@ CHROME_PATH = (r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe")
 CHROME_PROFILE = (r"C:\Users\Acey\Downloads\Dove Agent Build"
                   r"\Agent Modules\Chrome_Agent"
 )
-DEBUGGING_HOST = "127.0.0.1"
-DEBUGGING_PORT = 9222
+DEBUGGING_HOST = "***"
+DEBUGGING_PORT = ***
 DEBUGGING_URL = f"http://{DEBUGGING_HOST}:{DEBUGGING_PORT}"
 
 linkArray = {
@@ -175,8 +175,8 @@ def runLinkedScraper(title, userCity):
         )
 
         if login_required:
-            username = 'datasetprepper@gmail.com'
-            password = 'one2three!'
+            username = '***'
+            password = '**'
 
             if not username or not password:
                 raise RuntimeError(
