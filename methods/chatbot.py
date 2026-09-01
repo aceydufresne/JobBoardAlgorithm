@@ -1,3 +1,4 @@
+import json
 
 globalTokens = []
 
@@ -22,7 +23,7 @@ def tokenizer(path):
     merges = {}
     currentByte = 256
     
-    while currentByte<260:
+    while currentByte<2000:
         pairCounts = {}
         
         for unqToken in globalTokens:
@@ -53,6 +54,13 @@ def tokenizer(path):
             updateGlobalTokens.append(newTokens)
         globalTokens = updateGlobalTokens
         currentByte += 1
+    
+    mergeData = []
+    for pair, tokenID in merges.items():
+        mergeData.append([pair[0],pair[1],tokenID])
+    
+    with open("tokenizer_merges.json", "w") as file:
+        json.dump(mergeData, file)
 
 
 if __name__ == "__main__":
