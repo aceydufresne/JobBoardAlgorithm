@@ -17,7 +17,7 @@ def loadMerges():
 
 
 def encodeMessage(message, merges):
-    
+    #iterate through message and check for matching pairs in respecti to the json file list
     tokens = list(message.encode("utf-8"))
     for pair, tokenID in merges:
         newTokens = []
@@ -30,7 +30,38 @@ def encodeMessage(message, merges):
                 newTokens.append(tokens[i])
                 i+=1
         tokens = newTokens
-        return tokens
+        
+    return tokens
+
+
+def decodeToken(token, decoder):
+
+    if token < 256:
+        return [token]
+
+    left, right = decoder[token]
+
+    return (decodeToken(left, decoder)+ decodeToken(right, decoder))
+
+
+def decodeMessage(tokens, decoder, merges):
+    byteTokens = []
+
+    for token in tokens:
+        byteTokens.extend(decodeToken(token, decoder))
+    byteData = bytes(byteTokens)
+
+    return byteData.decode("utf-8")
+        
+
+
+def decoder(merges):
+    decoder = {}
+    #finding the combination of initial tokens, or rules
+    for pairs, tokenID in merges:
+        decoder[tokenID] = pairs
+    return decoder
+    
 
 def tokenizer(path):
     global globalTokens
@@ -102,4 +133,10 @@ if __name__ == "__main__":
     #tokenizer(path)
     #print(globalTokens)
     merges = loadMerges()
-    test1 = encodeMessage("Hello, I am testing the tokenizer, how are you?", merges)
+    decodingRules = decoder(merges)
+    message = "Hello, I am testing the tokenizer, how are you?"
+    test1 = encodeMessage(message, merges)
+    print(test1)
+    decoderBuild = decoder(merges)
+    decodedMessage = decodeMessage(test1,decoderBuild,merges)
+    print(decodedMessage)
