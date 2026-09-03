@@ -2,8 +2,40 @@ import json
 
 globalTokens = []
 
+def loadMerges():
+    path = r"C:\Users\Acey\Downloads\Dove Agent Build\Datasets\tokenData.json"
+    with open(path, "r", encoding="utf-8") as file:
+        mergeData = json.load(file)
+
+    merges = []
+
+    for left, right, tokenID in mergeData:
+        merges.append(((left, right), tokenID))
+
+    return merges
+
+
+
+def encodeMessage(message, merges):
+    
+    tokens = list(message.encode("utf-8"))
+    for pair, tokenID in merges:
+        newTokens = []
+        i = 0
+        while i<len(tokens):
+            if(i<len(tokens) - 1 and (tokens[i], tokens[i+1]) == pair):
+                newTokens.append(tokenID)
+                i+=2
+            else:
+                newTokens.append(tokens[i])
+                i+=1
+        tokens = newTokens
+        return tokens
+
 def tokenizer(path):
     global globalTokens
+    outputPath = r"C:\Users\Acey\Downloads\Dove Agent Build\Datasets\tokenData.json"
+    
     with open(path, "r", encoding="utf-8") as file:
         for line in file:
             conversation = line.strip()
@@ -59,7 +91,7 @@ def tokenizer(path):
     for pair, tokenID in merges.items():
         mergeData.append([pair[0],pair[1],tokenID])
     
-    with open("tokenizer_merges.json", "w") as file:
+    with open(outputPath, "w", encoding="utf-8") as file:
         json.dump(mergeData, file)
 
 
@@ -67,5 +99,7 @@ if __name__ == "__main__":
     path = "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\Datasets\\train\\train\\dialogues_train.txt"
     print("Ready to run")
     test = "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\Datasets\\testingEOU.txt"
-    tokenizer(test)
-    print(globalTokens)
+    #tokenizer(path)
+    #print(globalTokens)
+    merges = loadMerges()
+    test1 = encodeMessage("Hello, I am testing the tokenizer, how are you?", merges)
