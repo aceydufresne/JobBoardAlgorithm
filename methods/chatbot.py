@@ -15,6 +15,32 @@ def loadMerges():
     return merges
 
 
+def trainModel(merges):
+    path = "C:\\Users\\Acey\\Downloads\\Dove Agent Build\\Datasets\\train\\train\\dialogues_train.txt"
+    trainingData = []
+
+    BOS = 2000
+    EOU = 2001
+    EOS = 2002
+
+    with open(path, "r", encoding="utf-8") as file:
+
+        for line in file:
+            conversation = [BOS]
+            utterances = line.strip().split("__eou__")
+
+            for utterance in utterances:
+                utterance = utterance.strip()
+                if utterance:
+                    encodedMessage = encodeMessage(utterance,merges)
+                    conversation.extend(encodedMessage)
+                    conversation.append(EOU)
+
+            conversation.append(EOS)
+            trainingData.append(conversation)
+
+    return trainingData
+
 
 def encodeMessage(message, merges):
     #iterate through message and check for matching pairs in respecti to the json file list
@@ -133,10 +159,8 @@ if __name__ == "__main__":
     #tokenizer(path)
     #print(globalTokens)
     merges = loadMerges()
-    decodingRules = decoder(merges)
-    message = "Hello, I am testing the tokenizer, how are you?"
-    test1 = encodeMessage(message, merges)
-    print(test1)
-    decoderBuild = decoder(merges)
-    decodedMessage = decodeMessage(test1,decoderBuild,merges)
-    print(decodedMessage)
+    trainingData = trainModel(merges)
+    outputPath = r"C:\Users\Acey\Downloads\Dove Agent Build\Datasets\trainingTokens.json"
+
+    with open(outputPath, "w", encoding="utf-8") as file:
+        json.dump(trainingData, file)
